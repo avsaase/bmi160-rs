@@ -45,13 +45,13 @@ where
     DI: ReadData<Error = Error<CommE>> + WriteData<Error = Error<CommE>>,
 {
     /// Get chip ID
-    pub fn chip_id(&mut self) -> Result<u8, Error<CommE>> {
-        self.iface.read_register(Register::CHIPID)
+    pub async fn chip_id(&mut self) -> Result<u8, Error<CommE>> {
+        self.iface.read_register(Register::CHIPID).await
     }
 
     /// Get sensor power mode
-    pub fn power_mode(&mut self) -> Result<SensorPowerMode, Error<CommE>> {
-        let status = self.iface.read_register(Register::PMU_STATUS)?;
+    pub async fn power_mode(&mut self) -> Result<SensorPowerMode, Error<CommE>> {
+        let status = self.iface.read_register(Register::PMU_STATUS).await?;
         let accel = match status & (0b11 << 4) {
             0 => AccelerometerPowerMode::Suspend,
             0b10_0000 => AccelerometerPowerMode::LowPower,
@@ -75,8 +75,8 @@ where
     }
 
     /// Get sensor status
-    pub fn status(&mut self) -> Result<Status, Error<CommE>> {
-        let status = self.iface.read_register(Register::STATUS)?;
+    pub async fn status(&mut self) -> Result<Status, Error<CommE>> {
+        let status = self.iface.read_register(Register::STATUS).await?;
         Ok(Status {
             accel_data_ready: (status & BitFlags::DRDY_ACC) != 0,
             gyro_data_ready: (status & BitFlags::DRDY_GYR) != 0,
@@ -89,7 +89,7 @@ where
     }
 
     /// Configure accelerometer power mode
-    pub fn set_accel_power_mode(
+    pub async fn set_accel_power_mode(
         &mut self,
         mode: AccelerometerPowerMode,
     ) -> Result<(), Error<CommE>> {
@@ -98,21 +98,24 @@ where
             AccelerometerPowerMode::Normal => 0b0001_0001,
             AccelerometerPowerMode::LowPower => 0b0001_0010,
         };
-        self.iface.write_register(Register::CMD, cmd)
+        self.iface.write_register(Register::CMD, cmd).await
     }
 
     /// Configure gyroscope power mode
-    pub fn set_gyro_power_mode(&mut self, mode: GyroscopePowerMode) -> Result<(), Error<CommE>> {
+    pub async fn set_gyro_power_mode(
+        &mut self,
+        mode: GyroscopePowerMode,
+    ) -> Result<(), Error<CommE>> {
         let cmd = match mode {
             GyroscopePowerMode::Suspend => 0b0001_0100,
             GyroscopePowerMode::Normal => 0b0001_0101,
             GyroscopePowerMode::FastStartUp => 0b0001_0111,
         };
-        self.iface.write_register(Register::CMD, cmd)
+        self.iface.write_register(Register::CMD, cmd).await
     }
 
     /// Configure magnetometer power mode
-    pub fn set_magnet_power_mode(
+    pub async fn set_magnet_power_mode(
         &mut self,
         mode: MagnetometerPowerMode,
     ) -> Result<(), Error<CommE>> {
@@ -121,21 +124,23 @@ where
             MagnetometerPowerMode::Normal => 0b0001_1001,
             MagnetometerPowerMode::LowPower => 0b0001_1010,
         };
-        self.iface.write_register(Register::CMD, cmd)
+        self.iface.write_register(Register::CMD, cmd).await
     }
 
     /// Set the accelerometer range
-    pub fn set_accel_range(&mut self, range: AccelerometerRange) -> Result<(), Error<CommE>> {
+    pub async fn set_accel_range(&mut self, range: AccelerometerRange) -> Result<(), Error<CommE>> {
         self.iface
-            .write_register(Register::ACC_RANGE, range as u8)?;
+            .write_register(Register::ACC_RANGE, range as u8)
+            .await?;
         self.accel_range = range;
         Ok(())
     }
 
     /// Set the gyro range
-    pub fn set_gyro_range(&mut self, range: GyroscopeRange) -> Result<(), Error<CommE>> {
+    pub async fn set_gyro_range(&mut self, range: GyroscopeRange) -> Result<(), Error<CommE>> {
         self.iface
-            .write_register(Register::GYR_RANGE, range as u8)?;
+            .write_register(Register::GYR_RANGE, range as u8)
+            .await?;
         self.gyro_range = range;
         Ok(())
     }

@@ -9,13 +9,13 @@ where
     DI: ReadData<Error = Error<CommE>> + WriteData<Error = Error<CommE>>,
 {
     /// Read latest sensor data
-    pub fn data(&mut self, selector: SensorSelector) -> Result<Data, Error<CommE>> {
+    pub async fn data(&mut self, selector: SensorSelector) -> Result<Data, Error<CommE>> {
         let result = if selector != SensorSelector::new() {
             let (begin, end) = get_data_addresses(selector);
             let mut data = [0_u8; 24];
             data[0] = begin;
             let len = (1 + end - begin) as usize;
-            self.iface.read_data(&mut data[0..len])?;
+            self.iface.read_data(&mut data[0..len]).await?;
             get_data(selector, &data[1..], (begin - Register::MAG) as usize)
         } else {
             Data {
@@ -29,8 +29,11 @@ where
     }
 
     /// Read latest sensor data and scale it using the gyroscope and accelerometer ranges
-    pub fn data_scaled(&mut self, selector: SensorSelector) -> Result<DataScaled, Error<CommE>> {
-        let raw_data = self.data(selector)?;
+    pub async fn data_scaled(
+        &mut self,
+        selector: SensorSelector,
+    ) -> Result<DataScaled, Error<CommE>> {
+        let raw_data = self.data(selector).await?;
 
         let accel_multiplier = self.accel_range.multiplier();
         let gyro_multiplier = self.gyro_range.multiplier();
